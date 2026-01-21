@@ -19,7 +19,7 @@ const pgClient = new Client({
   port: 5432,
   database: "couturae",
   user: "couturae_user",
-  // no password needed for your local setup
+  // no password needed 
 });
 
 const sha256 = (s: string) => crypto.createHash("sha256").update(s).digest("hex");
@@ -54,39 +54,10 @@ function extractBuzzwords(text: string): string[] {
   const buzzwords: string[] = [];
   const lowerText = text.toLowerCase();
   
-  // Filter out common article filler words
-  const IGNORE_WORDS = new Set([
-    'continue', 'reading', 'click', 'here', 'more', 'about', 'share', 'post', 
-    'article', 'your', 'this', 'that', 'with', 'from', 'have', 'been', 'will',
-    'their', 'what', 'when', 'where', 'which', 'while', 'into', 'through'
-  ]);
-  
-  // Extract individual fashion keywords
-  for (const keyword of FASHION_KEYWORDS) {
-    if (lowerText.includes(keyword)) {
-      buzzwords.push(keyword);
-    }
-  }
-  
-  // Extract useful fashion phrases
-  const words = lowerText.replace(/[^\w\s-]/g, " ").split(/\s+/).filter(w => w.length > 2);
-  
-  for (let i = 0; i < words.length - 1; i++) {
-    const word1 = words[i];
-    const word2 = words[i + 1];
-    
-    if (!word1 || !word2) continue;
-    
-    // Skip if either word is a filler word
-    if (IGNORE_WORDS.has(word1) || IGNORE_WORDS.has(word2)) continue;
-    
-    // Create bigram if at least one word is a fashion keyword
-    if (FASHION_KEYWORDS.has(word1) || FASHION_KEYWORDS.has(word2)) {
-      const bigram = `${word1} ${word2}`;
-      // Additional filter: bigram should be reasonable length
-      if (bigram.length >= 6 && bigram.length <= 30) {
-        buzzwords.push(bigram);
-      }
+  // Only extract exact fashion keywords - no bigrams, no synonyms, no adjectives
+  for (const buzzword of FASHION_KEYWORDS) {
+    if (lowerText.includes(buzzword)) {
+      buzzwords.push(buzzword);
     }
   }
 
