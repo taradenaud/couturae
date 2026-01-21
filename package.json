@@ -4,6 +4,14 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "docker-compose up -d && npm run wait-for-services && npm run dev",
+    "dev": "concurrently \"npm run api\" \"npm run normalizer\" \"npm run dashboard\"",
+    "api": "cd services/api && npm run dev",
+    "normalizer": "cd services/normalizer && npm run dev",
+    "ingest": "cd services/ingestor && npx ts-node index.ts",
+    "dashboard": "npx http-server -p 8080 -c-1 -o dashboard.html",
+    "wait-for-services": "sleep 5",
+    "stop": "docker-compose down",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -20,6 +28,8 @@
   "homepage": "https://github.com/taradenaud/couturae#readme",
   "devDependencies": {
     "@types/node": "^25.0.9",
+    "concurrently": "^9.2.1",
+    "http-server": "^14.1.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   }
