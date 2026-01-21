@@ -17,20 +17,53 @@ const pgClient = new Client({
 
 await pgClient.connect();
 
+// GET /api/seasons - List all available seasons
+app.get("/api/seasons", async (req, res) => {
+  try {
+    const result = await pgClient.query(
+      `SELECT DISTINCT season, COUNT(*) as article_count
+       FROM items
+       WHERE season IS NOT NULL
+       GROUP BY season
+       ORDER BY season DESC`
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: "Database query failed" });
+  }
+});
+
 // GET /api/buzzwords/trending - Top trending buzzwords
 app.get("/api/buzzwords/trending", async (req, res) => {
   try {
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
-    const result = await pgClient.query(
-      `SELECT word, COUNT(*) as frequency, 
+    const season = req.query.season as string | undefined;
+    
+    let query: string;
+    let params: (string | number)[];
+    
+    if (season && season !== 'all') {
+      query = `SELECT word, COUNT(*) as frequency, 
+              COUNT(DISTINCT city) as cities,
+              COUNT(DISTINCT season) as seasons
+       FROM buzzwords 
+       WHERE season = $1
+       GROUP BY word 
+       ORDER BY frequency DESC 
+       LIMIT $2`;
+      params = [season.toUpperCase(), limit];
+    } else {
+      query = `SELECT word, COUNT(*) as frequency, 
               COUNT(DISTINCT city) as cities,
               COUNT(DISTINCT season) as seasons
        FROM buzzwords 
        GROUP BY word 
        ORDER BY frequency DESC 
-       LIMIT $1`,
-      [limit]
-    );
+       LIMIT $1`;
+      params = [limit];
+    }
+    
+    const result = await pgClient.query(query, params);
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: "Database query failed" });
@@ -58,8 +91,25 @@ app.get("/api/buzzwords/by-season/:season", async (req, res) => {
 // GET /api/designers - All designers with show counts
 app.get("/api/designers", async (req, res) => {
   try {
-    const result = await pgClient.query(
-      `SELECT designer_name, 
+    const season = req.query.season as string | undefined;
+    
+    let query: string;
+    let params: string[] = [];
+    
+    if (season && season !== 'all') {
+      query = `SELECT designer_name, 
+              COUNT(*) as total_shows,
+              COUNT(DISTINCT city) as cities,
+              COUNT(DISTINCT season) as seasons,
+              ARRAY_AGG(DISTINCT city) as cities_list,
+              ARRAY_AGG(DISTINCT season) as seasons_list
+       FROM designers 
+       WHERE season = $1
+       GROUP BY designer_name 
+       ORDER BY total_shows DESC`;
+      params = [season.toUpperCase()];
+    } else {
+      query = `SELECT designer_name, 
               COUNT(*) as total_shows,
               COUNT(DISTINCT city) as cities,
               COUNT(DISTINCT season) as seasons,
@@ -67,8 +117,10 @@ app.get("/api/designers", async (req, res) => {
               ARRAY_AGG(DISTINCT season) as seasons_list
        FROM designers 
        GROUP BY designer_name 
-       ORDER BY total_shows DESC`
-    );
+       ORDER BY total_shows DESC`;
+    }
+    
+    const result = await pgClient.query(query, params);
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: "Database query failed" });
@@ -182,18 +234,32 @@ app.get("/api/cities/:city/trends", async (req, res) => {
 // GET /api/stats - Overall platform stats
 app.get("/api/stats", async (req, res) => {
   try {
-    const totalItems = await pgClient.query(`SELECT COUNT(*) FROM items`);
-    const totalBuzzwords = await pgClient.query(`SELECT COUNT(*) FROM buzzwords`);
-    const totalDesigners = await pgClient.query(`SELECT COUNT(*) FROM designers`);
-    const uniqueBuzzwords = await pgClient.query(`SELECT COUNT(DISTINCT word) FROM buzzwords`);
-    const uniqueDesigners = await pgClient.query(`SELECT COUNT(DISTINCT designer_name) FROM designers`);
+    const season = req.query.season as string | undefined;
+    const seasonFilter = season && season !== 'all' ? season.toUpperCase() : null;
+    
+    let totalItems, totalBuzzwords, totalDesigners, uniqueBuzzwords, uniqueDesigners;
+    
+    if (seasonFilter) {
+      totalItems = await pgClient.query(`SELECT COUNT(*) FROM items WHERE season = $1`, [seasonFilter]);
+      totalBuzzwords = await pgClient.query(`SELECT COUNT(*) FROM buzzwords WHERE season = $1`, [seasonFilter]);
+      totalDesigners = await pgClient.query(`SELECT COUNT(*) FROM designers WHERE season = $1`, [seasonFilter]);
+      uniqueBuzzwords = await pgClient.query(`SELECT COUNT(DISTINCT word) FROM buzzwords WHERE season = $1`, [seasonFilter]);
+      uniqueDesigners = await pgClient.query(`SELECT COUNT(DISTINCT designer_name) FROM designers WHERE season = $1`, [seasonFilter]);
+    } else {
+      totalItems = await pgClient.query(`SELECT COUNT(*) FROM items`);
+      totalBuzzwords = await pgClient.query(`SELECT COUNT(*) FROM buzzwords`);
+      totalDesigners = await pgClient.query(`SELECT COUNT(*) FROM designers`);
+      uniqueBuzzwords = await pgClient.query(`SELECT COUNT(DISTINCT word) FROM buzzwords`);
+      uniqueDesigners = await pgClient.query(`SELECT COUNT(DISTINCT designer_name) FROM designers`);
+    }
     
     res.json({
       total_articles: parseInt(totalItems.rows[0].count),
       total_buzzword_mentions: parseInt(totalBuzzwords.rows[0].count),
       total_designer_mentions: parseInt(totalDesigners.rows[0].count),
       unique_buzzwords: parseInt(uniqueBuzzwords.rows[0].count),
-      unique_designers: parseInt(uniqueDesigners.rows[0].count)
+      unique_designers: parseInt(uniqueDesigners.rows[0].count),
+      season: seasonFilter || 'all'
     });
   } catch (err) {
     res.status(500).json({ error: "Database query failed" });

@@ -167,6 +167,54 @@
             margin-bottom: 20px;
             color: #ff6666;
         }
+        
+        .filter-bar {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #111;
+            border: 1px solid #222;
+        }
+        
+        .filter-bar label {
+            font-size: 12px;
+            letter-spacing: 2px;
+            color: #888;
+        }
+        
+        .filter-bar select {
+            background: #0a0a0a;
+            border: 1px solid #333;
+            color: #fff;
+            padding: 10px 20px;
+            font-size: 14px;
+            cursor: pointer;
+            letter-spacing: 1px;
+            min-width: 180px;
+        }
+        
+        .filter-bar select:hover {
+            border-color: #555;
+        }
+        
+        .filter-bar select:focus {
+            outline: none;
+            border-color: #666;
+        }
+        
+        .filter-bar select option {
+            background: #111;
+            color: #fff;
+        }
+        
+        .current-season {
+            margin-left: auto;
+            font-size: 12px;
+            color: #666;
+            letter-spacing: 1px;
+        }
     </style>
 </head>
 <body>
@@ -177,6 +225,13 @@
         </header>
         
         <div id="error-container"></div>
+        
+        <div class="filter-bar">
+            <label for="season-select">SEASON</label>
+            <select id="season-select">
+                <option value="all">All Seasons</option>
+            </select>
+        </div>
         
         <div id="stats-container" class="stats-grid">
             <div class="loading">Loading statistics...</div>
@@ -199,18 +254,59 @@
     
     <script>
         const API_BASE = 'http://localhost:3000/api';
+        let currentSeason = 'all';
         
         function showError(message) {
             const errorContainer = document.getElementById('error-container');
             errorContainer.innerHTML = `<div class="error">⚠️ ${message}</div>`;
         }
         
-        async function fetchStats() {
+        function getSeasonParam() {
+            return currentSeason !== 'all' ? `season=${currentSeason}` : '';
+        }
+        
+        async function fetchSeasons() {
             try {
-                const response = await fetch(`${API_BASE}/stats`);
+                const response = await fetch(`${API_BASE}/seasons`);
                 const data = await response.json();
                 
+                const select = document.getElementById('season-select');
+                // Keep "All Seasons" option and add the rest
+                const options = data.map(item => 
+                    `<option value="${item.season}">${formatSeasonName(item.season)} (${item.article_count} articles)</option>`
+                ).join('');
+                
+                select.innerHTML = `<option value="all">All Seasons</option>${options}`;
+            } catch (error) {
+                console.error('Failed to load seasons:', error);
+            }
+        }
+        
+        function formatSeasonName(season) {
+            if (!season) return 'Unknown';
+            // Convert FW24 to "Fall/Winter 2024", SS25 to "Spring/Summer 2025"
+            const match = season.match(/^(FW|SS)(\d{2})$/i);
+            if (match) {
+                const type = match[1].toUpperCase() === 'FW' ? 'Fall/Winter' : 'Spring/Summer';
+                const year = parseInt(match[2]) > 50 ? `19${match[2]}` : `20${match[2]}`;
+                return `${type} ${year}`;
+            }
+            return season;
+        }
+        
+        async function fetchStats() {
+            try {
+                const seasonParam = getSeasonParam();
+                const url = `${API_BASE}/stats${seasonParam ? '?' + seasonParam : ''}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                const seasonLabel = currentSeason !== 'all' 
+                    ? `<div class="stat-card"><div class="stat-value">${formatSeasonName(currentSeason)}</div><div class="stat-label">Selected Season</div></div>` 
+                    : '';
+                
                 const statsHTML = `
+                    ${seasonLabel}
                     <div class="stat-card">
                         <div class="stat-value">${data.total_articles}</div>
                         <div class="stat-label">Articles</div>
@@ -242,7 +338,9 @@
         
         async function fetchBuzzwords() {
             try {
-                const response = await fetch(`${API_BASE}/buzzwords/trending?limit=20`);
+                const seasonParam = getSeasonParam();
+                const url = `${API_BASE}/buzzwords/trending?limit=20${seasonParam ? '&' + seasonParam : ''}`;
+                const response = await fetch(url);
                 const data = await response.json();
                 
                 const buzzwordsHTML = data.map(item => `
@@ -260,7 +358,9 @@
         
         async function fetchDesigners() {
             try {
-                const response = await fetch(`${API_BASE}/designers`);
+                const seasonParam = getSeasonParam();
+                const url = `${API_BASE}/designers${seasonParam ? '?' + seasonParam : ''}`;
+                const response = await fetch(url);
                 const data = await response.json();
                 
                 const designersHTML = data.map(item => `
@@ -279,17 +379,24 @@
             }
         }
         
-        // Load all data on page load
-        fetchStats();
-        fetchBuzzwords();
-        fetchDesigners();
-        
-        // Refresh data every 30 seconds
-        setInterval(() => {
+        function refreshDashboard() {
             fetchStats();
             fetchBuzzwords();
             fetchDesigners();
-        }, 30000);
+        }
+        
+        // Season dropdown change handler
+        document.getElementById('season-select').addEventListener('change', (e) => {
+            currentSeason = e.target.value;
+            refreshDashboard();
+        });
+        
+        // Initial load
+        fetchSeasons();
+        refreshDashboard();
+        
+        // Refresh data every 30 seconds
+        setInterval(refreshDashboard, 30000);
     </script>
 </body>
 </html>
