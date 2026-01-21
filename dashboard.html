@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Couturae - Fashion Week Intelligence</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #ffffff;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            padding: 40px 20px;
+            border-bottom: 2px solid #222;
+            margin-bottom: 40px;
+        }
+        
+        h1 {
+            font-size: 48px;
+            font-weight: 300;
+            letter-spacing: 4px;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #888;
+            font-size: 14px;
+            letter-spacing: 2px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .stat-card {
+            background: #111;
+            border: 1px solid #222;
+            padding: 30px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        
+        .stat-card:hover {
+            border-color: #444;
+            transform: translateY(-2px);
+        }
+        
+        .stat-value {
+            font-size: 36px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .stat-label {
+            color: #888;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .section {
+            background: #111;
+            border: 1px solid #222;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: 500;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #222;
+            letter-spacing: 2px;
+        }
+        
+        .buzzword-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+        }
+        
+        .buzzword-item {
+            background: #0a0a0a;
+            border: 1px solid #222;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .buzzword-word {
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        
+        .buzzword-count {
+            font-size: 24px;
+            font-weight: 600;
+            color: #666;
+        }
+        
+        .designer-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        
+        .designer-item {
+            background: #0a0a0a;
+            border: 1px solid #222;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .designer-item:hover {
+            border-color: #444;
+            background: #151515;
+        }
+        
+        .designer-name {
+            font-size: 16px;
+            font-weight: 500;
+        }
+        
+        .designer-shows {
+            font-size: 20px;
+            color: #666;
+        }
+        
+        .designer-meta {
+            font-size: 11px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .error {
+            background: #2a0000;
+            border: 1px solid #440000;
+            padding: 20px;
+            margin-bottom: 20px;
+            color: #ff6666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>COUTURAE</h1>
+            <div class="subtitle">FASHION WEEK INTELLIGENCE PLATFORM</div>
+        </header>
+        
+        <div id="error-container"></div>
+        
+        <div id="stats-container" class="stats-grid">
+            <div class="loading">Loading statistics...</div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">TRENDING BUZZWORDS</div>
+            <div id="buzzwords-container" class="buzzword-grid">
+                <div class="loading">Loading buzzwords...</div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">DESIGNERS & SHOWS</div>
+            <div id="designers-container" class="designer-list">
+                <div class="loading">Loading designers...</div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE = 'http://localhost:3000/api';
+        
+        function showError(message) {
+            const errorContainer = document.getElementById('error-container');
+            errorContainer.innerHTML = `<div class="error">⚠️ ${message}</div>`;
+        }
+        
+        async function fetchStats() {
+            try {
+                const response = await fetch(`${API_BASE}/stats`);
+                const data = await response.json();
+                
+                const statsHTML = `
+                    <div class="stat-card">
+                        <div class="stat-value">${data.total_articles}</div>
+                        <div class="stat-label">Articles</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${data.unique_buzzwords}</div>
+                        <div class="stat-label">Unique Buzzwords</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${data.total_buzzword_mentions}</div>
+                        <div class="stat-label">Total Buzzword Mentions</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${data.unique_designers}</div>
+                        <div class="stat-label">Designers</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${data.total_designer_mentions}</div>
+                        <div class="stat-label">Designer Mentions</div>
+                    </div>
+                `;
+                
+                document.getElementById('stats-container').innerHTML = statsHTML;
+            } catch (error) {
+                showError('Failed to load statistics. Make sure the API is running on http://localhost:3000');
+                document.getElementById('stats-container').innerHTML = '<div class="loading">Failed to load</div>';
+            }
+        }
+        
+        async function fetchBuzzwords() {
+            try {
+                const response = await fetch(`${API_BASE}/buzzwords/trending?limit=20`);
+                const data = await response.json();
+                
+                const buzzwordsHTML = data.map(item => `
+                    <div class="buzzword-item">
+                        <div class="buzzword-word">${item.word}</div>
+                        <div class="buzzword-count">${item.frequency}</div>
+                    </div>
+                `).join('');
+                
+                document.getElementById('buzzwords-container').innerHTML = buzzwordsHTML || '<div class="loading">No buzzwords found</div>';
+            } catch (error) {
+                document.getElementById('buzzwords-container').innerHTML = '<div class="loading">Failed to load</div>';
+            }
+        }
+        
+        async function fetchDesigners() {
+            try {
+                const response = await fetch(`${API_BASE}/designers`);
+                const data = await response.json();
+                
+                const designersHTML = data.map(item => `
+                    <div class="designer-item" onclick="window.open('${API_BASE}/designers/${encodeURIComponent(item.designer_name)}/shows', '_blank')">
+                        <div>
+                            <div class="designer-name">${item.designer_name}</div>
+                            <div class="designer-meta">${item.cities} cities • ${item.seasons} seasons</div>
+                        </div>
+                        <div class="designer-shows">${item.total_shows}</div>
+                    </div>
+                `).join('');
+                
+                document.getElementById('designers-container').innerHTML = designersHTML || '<div class="loading">No designers found</div>';
+            } catch (error) {
+                document.getElementById('designers-container').innerHTML = '<div class="loading">Failed to load</div>';
+            }
+        }
+        
+        // Load all data on page load
+        fetchStats();
+        fetchBuzzwords();
+        fetchDesigners();
+        
+        // Refresh data every 30 seconds
+        setInterval(() => {
+            fetchStats();
+            fetchBuzzwords();
+            fetchDesigners();
+        }, 30000);
+    </script>
+</body>
+</html>
