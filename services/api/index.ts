@@ -21,7 +21,7 @@ await pgClient.connect();
 app.get("/api/seasons", async (req, res) => {
   try {
     const result = await pgClient.query(
-      `SELECT DISTINCT season, COUNT(*) as article_count
+      `SELECT season, COUNT(*) as article_count
        FROM items
        WHERE season IS NOT NULL
        GROUP BY season
@@ -39,6 +39,7 @@ app.get("/api/seasons", async (req, res) => {
     );
     res.json(result.rows);
   } catch (err) {
+    console.error("Seasons query error:", err);
     res.status(500).json({ error: "Database query failed" });
   }
 });
@@ -74,24 +75,6 @@ app.get("/api/buzzwords/trending", async (req, res) => {
     }
     
     const result = await pgClient.query(query, params);
-    res.json(result.rows);
-  } catch (err) {
-    res.status(500).json({ error: "Database query failed" });
-  }
-});
-
-// GET /api/buzzwords/by-season/:season - Buzzwords for specific season
-app.get("/api/buzzwords/by-season/:season", async (req, res) => {
-  try {
-    const { season } = req.params;
-    const result = await pgClient.query(
-      `SELECT word, COUNT(*) as frequency, city
-       FROM buzzwords 
-       WHERE season = $1
-       GROUP BY word, city
-       ORDER BY frequency DESC`,
-      [season.toUpperCase()]
-    );
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: "Database query failed" });
@@ -155,92 +138,6 @@ app.get("/api/designers/:name/shows", async (req, res) => {
   }
 });
 
-// GET /api/seasons/:season/stats - Stats for a specific season
-app.get("/api/seasons/:season/stats", async (req, res) => {
-  try {
-    const { season } = req.params;
-    
-    const items = await pgClient.query(
-      `SELECT COUNT(*) as total_articles FROM items WHERE season = $1`,
-      [season.toUpperCase()]
-    );
-    
-    const buzzwords = await pgClient.query(
-      `SELECT COUNT(DISTINCT word) as unique_buzzwords FROM buzzwords WHERE season = $1`,
-      [season.toUpperCase()]
-    );
-    
-    const designers = await pgClient.query(
-      `SELECT COUNT(DISTINCT designer_name) as unique_designers FROM designers WHERE season = $1`,
-      [season.toUpperCase()]
-    );
-    
-    const cities = await pgClient.query(
-      `SELECT city, COUNT(*) as article_count 
-       FROM items 
-       WHERE season = $1 AND city IS NOT NULL
-       GROUP BY city
-       ORDER BY article_count DESC`,
-      [season.toUpperCase()]
-    );
-    
-    res.json({
-      season: season.toUpperCase(),
-      total_articles: parseInt(items.rows[0].total_articles),
-      unique_buzzwords: parseInt(buzzwords.rows[0].unique_buzzwords),
-      unique_designers: parseInt(designers.rows[0].unique_designers),
-      by_city: cities.rows
-    });
-  } catch (err) {
-    res.status(500).json({ error: "Database query failed" });
-  }
-});
-
-// GET /api/cities/:city/trends - Trends for a specific city
-app.get("/api/cities/:city/trends", async (req, res) => {
-  try {
-    const { city } = req.params;
-    
-    const topBuzzwords = await pgClient.query(
-      `SELECT word, COUNT(*) as frequency
-       FROM buzzwords
-       WHERE city ILIKE $1
-       GROUP BY word
-       ORDER BY frequency DESC
-       LIMIT 10`,
-      [city]
-    );
-    
-    const topDesigners = await pgClient.query(
-      `SELECT designer_name, COUNT(*) as shows
-       FROM designers
-       WHERE city ILIKE $1
-       GROUP BY designer_name
-       ORDER BY shows DESC
-       LIMIT 10`,
-      [city]
-    );
-    
-    const seasons = await pgClient.query(
-      `SELECT season, COUNT(*) as article_count
-       FROM items
-       WHERE city ILIKE $1 AND season IS NOT NULL
-       GROUP BY season
-       ORDER BY season DESC`,
-      [city]
-    );
-    
-    res.json({
-      city,
-      top_buzzwords: topBuzzwords.rows,
-      top_designers: topDesigners.rows,
-      seasons: seasons.rows
-    });
-  } catch (err) {
-    res.status(500).json({ error: "Database query failed" });
-  }
-});
-
 // GET /api/stats - Overall platform stats
 app.get("/api/stats", async (req, res) => {
   try {
@@ -283,12 +180,10 @@ app.get("/", (req, res) => {
     version: "1.0.0",
     endpoints: {
       stats: "GET /api/stats",
+      seasons: "GET /api/seasons",
       trending_buzzwords: "GET /api/buzzwords/trending?limit=20",
-      season_buzzwords: "GET /api/buzzwords/by-season/:season",
       all_designers: "GET /api/designers",
-      designer_shows: "GET /api/designers/:name/shows",
-      season_stats: "GET /api/seasons/:season/stats",
-      city_trends: "GET /api/cities/:city/trends"
+      designer_shows: "GET /api/designers/:name/shows"
     }
   });
 });

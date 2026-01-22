@@ -12,12 +12,10 @@
   "type": "module",
   "dependencies": {
     "kafkajs": "^2.2.4",
-    "pg": "^8.17.2",
     "rss-parser": "^3.13.0"
   },
   "devDependencies": {
     "@types/node": "^25.0.9",
-    "@types/pg": "^8.16.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   }

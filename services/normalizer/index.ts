@@ -49,7 +49,6 @@ const FASHION_KEYWORDS = new Set([
   "cerulean", "indigo", "violet", "plum", "aubergine", "chartreuse", "mint",
   "rose-gold", "copper", "bronze", "pewter", "gunmetal", "silver", "gold",
   "nude", "camel", "taupe", "ecru", "bone", "cream", "off-white", "charcoal",
-  // Common Colors
   "red", "blue", "green", "black", "white", "pink", "purple", "orange", "yellow",
   "brown", "grey", "gray", "beige", "turquoise", "maroon", "aqua", "peach",
   "lime", "cyan", "khaki", "tan", "salmon", "lilac", "periwinkle",
@@ -58,7 +57,7 @@ const FASHION_KEYWORDS = new Set([
   "quiet-luxury", "clean-girl", "coastal-grandmother", "dark-academia", "light-academia"
 ]);
 
-// Generic garment words - only count if accompanied by fashion keywords
+// garment words - only count if accompanied by fashion keywords
 const GARMENT_WORDS = new Set([
   "blazer", "trench", "coat", "jacket", "dress", "skirt", "pants", "trousers", "blouse",
   "shirt", "sweater", "cardigan", "jumpsuit", "romper", "gown", "cape", "poncho",
@@ -69,10 +68,9 @@ function extractBuzzwords(text: string): string[] {
   const buzzwords: string[] = [];
   const lowerText = text.toLowerCase();
   
-  // Extract fashion keywords (these are always valid on their own)
-  // BUT exclude garment words - they should never appear alone
+  // Extract fashion keywords but exclude garment words - they should never appear alone
   for (const buzzword of FASHION_KEYWORDS) {
-    // Skip if this keyword is also a garment word (shouldn't happen but safety check)
+    // Skip if this keyword is also a garment word 
     if (GARMENT_WORDS.has(buzzword)) continue;
     
     // Use word boundary to avoid partial matches
@@ -82,8 +80,7 @@ function extractBuzzwords(text: string): string[] {
     }
   }
   
-  // Only include garment words when DIRECTLY paired with a modifier keyword
-  // Look for patterns like "silk dress", "leather jacket", "velvet coat"
+  // Func to include garment words when paired with a modifier keyword
   for (const garment of GARMENT_WORDS) {
     for (const keyword of FASHION_KEYWORDS) {
       // Check for "keyword garment" pattern (e.g., "silk dress", "leather jacket")
