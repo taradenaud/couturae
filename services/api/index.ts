@@ -25,7 +25,17 @@ app.get("/api/seasons", async (req, res) => {
        FROM items
        WHERE season IS NOT NULL
        GROUP BY season
-       ORDER BY season DESC`
+       ORDER BY 
+         SUBSTRING(season FROM '[0-9]+') DESC,
+         CASE 
+           WHEN season LIKE 'HC-%' THEN 1
+           WHEN season LIKE 'M-%' THEN 2
+           WHEN season LIKE 'FW%' THEN 3
+           WHEN season LIKE 'PF%' THEN 4
+           WHEN season LIKE 'RS%' THEN 5
+           WHEN season LIKE 'SS%' THEN 6
+           ELSE 7
+         END`
     );
     res.json(result.rows);
   } catch (err) {

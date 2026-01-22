@@ -64,8 +64,3 @@ npm stop
 - **API**: Provides REST endpoints for data access
 - **Dashboard**: Web interface displaying trends
 
-## Endpoints
-
-- Dashboard: http://localhost:8080/dashboard.html
-- API Stats: http://localhost:3000/api/stats
-- Trending Buzzwords: http://localhost:3000/api/buzzwords/trending

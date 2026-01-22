@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Couturae - Fashion Week Data Platform</title>
+    <title>Couturae - Fashion Week News & Data Platform</title>
     <style>
         * {
             margin: 0;
@@ -215,16 +215,220 @@
             color: #666;
             letter-spacing: 1px;
         }
+        
+        /* Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 1000;
+            overflow-y: auto;
+            padding: 40px 20px;
+        }
+        
+        .modal-overlay.active {
+            display: block;
+        }
+        
+        .modal {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #111;
+            border: 1px solid #333;
+            position: relative;
+        }
+        
+        .modal-header {
+            padding: 40px;
+            border-bottom: 1px solid #222;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        
+        .modal-header h2 {
+            font-size: 32px;
+            font-weight: 300;
+            letter-spacing: 3px;
+            margin: 0;
+        }
+        
+        .modal-header .designer-stats {
+            display: flex;
+            gap: 30px;
+            margin-top: 15px;
+        }
+        
+        .modal-header .stat {
+            text-align: center;
+        }
+        
+        .modal-header .stat-value {
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .modal-header .stat-label {
+            font-size: 10px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .modal-close {
+            background: none;
+            border: 1px solid #333;
+            color: #888;
+            font-size: 24px;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .modal-close:hover {
+            border-color: #666;
+            color: #fff;
+        }
+        
+        .modal-body {
+            padding: 30px 40px 40px;
+        }
+        
+        .shows-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .show-item {
+            background: #0a0a0a;
+            border: 1px solid #222;
+            padding: 25px;
+            transition: all 0.3s;
+        }
+        
+        .show-item:hover {
+            border-color: #444;
+            background: #151515;
+        }
+        
+        .show-item a {
+            color: #fff;
+            text-decoration: none;
+        }
+        
+        .show-item a:hover {
+            text-decoration: underline;
+        }
+        
+        .show-title {
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+        
+        .show-meta {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+        
+        .show-meta span {
+            font-size: 12px;
+            color: #666;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .show-meta .tag {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            padding: 4px 10px;
+            font-size: 11px;
+            letter-spacing: 1px;
+        }
+        
+        .show-snippet {
+            font-size: 13px;
+            color: #888;
+            line-height: 1.6;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .no-shows {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+        
+        .cities-tags {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+        
+        .city-tag {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            padding: 6px 12px;
+            font-size: 11px;
+            letter-spacing: 1px;
+            color: #888;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
             <h1>COUTURAE</h1>
-            <div class="subtitle">FASHION WEEK DATA PLATFORM</div>
+            <div class="subtitle">FASHION WEEK NEWS & DATA PLATFORM</div>
         </header>
         
         <div id="error-container"></div>
+        
+        <!-- Designer Modal -->
+        <div id="designer-modal" class="modal-overlay">
+            <div class="modal">
+                <div class="modal-header">
+                    <div>
+                        <h2 id="modal-designer-name"></h2>
+                        <div class="designer-stats">
+                            <div class="stat">
+                                <div class="stat-value" id="modal-show-count">0</div>
+                                <div class="stat-label">Articles</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value" id="modal-city-count">0</div>
+                                <div class="stat-label">Cities</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value" id="modal-season-count">0</div>
+                                <div class="stat-label">Seasons</div>
+                            </div>
+                        </div>
+                        <div id="modal-cities-tags" class="cities-tags"></div>
+                    </div>
+                    <button class="modal-close" onclick="closeDesignerModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div id="modal-shows-list" class="shows-list">
+                        <div class="loading">Loading shows...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
         
         <div class="filter-bar">
             <label for="season-select">SEASON</label>
@@ -258,7 +462,7 @@
         
         function showError(message) {
             const errorContainer = document.getElementById('error-container');
-            errorContainer.innerHTML = `<div class="error">⚠️ ${message}</div>`;
+            errorContainer.innerHTML = `<div class="error"> ${message}</div>`;
         }
         
         function getSeasonParam() {
@@ -364,7 +568,7 @@
                 const data = await response.json();
                 
                 const designersHTML = data.map(item => `
-                    <div class="designer-item" onclick="window.open('${API_BASE}/designers/${encodeURIComponent(item.designer_name)}/shows', '_blank')">
+                    <div class="designer-item" onclick="openDesignerModal('${item.designer_name.replace(/'/g, "\\'")}', ${item.total_shows}, ${item.cities}, ${item.seasons}, '${(item.cities_list || []).join(',')}')">
                         <div>
                             <div class="designer-name">${item.designer_name}</div>
                             <div class="designer-meta">${item.cities} cities • ${item.seasons} seasons</div>
@@ -389,6 +593,68 @@
         document.getElementById('season-select').addEventListener('change', (e) => {
             currentSeason = e.target.value;
             refreshDashboard();
+        });
+        
+        // Designer Modal Functions
+        async function openDesignerModal(designerName, totalShows, cities, seasons, citiesList) {
+            const modal = document.getElementById('designer-modal');
+            document.getElementById('modal-designer-name').textContent = designerName;
+            document.getElementById('modal-show-count').textContent = totalShows;
+            document.getElementById('modal-city-count').textContent = cities;
+            document.getElementById('modal-season-count').textContent = seasons;
+            
+            // Show city tags
+            const citiesArray = citiesList ? citiesList.split(',').filter(c => c) : [];
+            document.getElementById('modal-cities-tags').innerHTML = citiesArray
+                .map(city => `<span class="city-tag">${city}</span>`)
+                .join('');
+            
+            document.getElementById('modal-shows-list').innerHTML = '<div class="loading">Loading shows...</div>';
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            
+            try {
+                const response = await fetch(`${API_BASE}/designers/${encodeURIComponent(designerName)}/shows`);
+                const shows = await response.json();
+                
+                if (shows.length === 0) {
+                    document.getElementById('modal-shows-list').innerHTML = '<div class="no-shows">No shows found for this designer</div>';
+                    return;
+                }
+                
+                const showsHTML = shows.map(show => `
+                    <div class="show-item">
+                        <div class="show-title">
+                            <a href="${show.url}" target="_blank">${show.title || 'Untitled'}</a>
+                        </div>
+                        <div class="show-meta">
+                            ${show.city ? `<span class="tag">${show.city}</span>` : ''}
+                            ${show.season ? `<span class="tag">${formatSeasonName(show.season)}</span>` : ''}
+                            ${show.published_at ? `<span> ${new Date(show.published_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>` : ''}
+                        </div>
+                        ${show.snippet ? `<div class="show-snippet">${show.snippet}</div>` : ''}
+                    </div>
+                `).join('');
+                
+                document.getElementById('modal-shows-list').innerHTML = showsHTML;
+            } catch (error) {
+                document.getElementById('modal-shows-list').innerHTML = '<div class="no-shows">Failed to load shows</div>';
+            }
+        }
+        
+        function closeDesignerModal() {
+            document.getElementById('designer-modal').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+        
+        // Close modal on escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeDesignerModal();
+        });
+        
+        // Close modal when clicking outside
+        document.getElementById('designer-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'designer-modal') closeDesignerModal();
         });
         
         // Initial load
